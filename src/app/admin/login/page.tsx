@@ -8,8 +8,8 @@ export default function AdminLoginPage() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6">
       <PageHeader
-        title="Admin sign in"
-        description="NHSF (UK) Schools — staff sign in with your NHSF email. Accounts are created in Supabase (invite only; keep public sign-up disabled)."
+        title="Staff sign in"
+        description="For authorised NHSF (UK) Schools team members only. Use the email and password you were given to manage events, consent forms, and submissions."
       />
 
       <Card>
@@ -17,10 +17,10 @@ export default function AdminLoginPage() {
           <h2 className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
             Sign in
           </h2>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Each person uses their own email and password. Only emails listed in{" "}
-            <code className="font-mono text-xs">ADMIN_ALLOWED_EMAILS</code> on the
-            server can access admin.
+          <p className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+            Sign-in details are personal—do not share your password. Access is
+            limited to approved staff; if you need an account or have trouble
+            signing in, contact your NHSF Schools lead.
           </p>
         </CardHeader>
         <CardContent>

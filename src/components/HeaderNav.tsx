@@ -7,15 +7,11 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-const desktopLinks = [
-  { href: "/events", label: "Events" },
-  { href: "/admin", label: "Admin" },
-] as const;
+const desktopLinks = [{ href: "/events", label: "Events" }] as const;
 
 const mobileLinks = [
   { href: "/", label: "Home" },
   { href: "/events", label: "Events" },
-  { href: "/admin", label: "Admin" },
   { href: "/privacy", label: "Privacy" },
 ] as const;
 
