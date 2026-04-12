@@ -1,0 +1,73 @@
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  role      String
+  createdAt DateTime @default(now())
+}
+
+model Event {
+  id             String       @id @default(uuid())
+  title          String
+  slug           String       @unique
+  description    String?
+  eventDate      DateTime?
+  opensAt        DateTime?
+  closesAt       DateTime?
+  status         String
+  /// JSON array of consent field definitions (`FormFieldDef[]`). Null = use app default template.
+  formFieldsJson Json?
+  createdAt      DateTime     @default(now())
+  submissions    Submission[]
+
+  @@index([status])
+}
+
+model Submission {
+  id                        String   @id @default(uuid())
+  eventId                   String
+  event                     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  submittedAt               DateTime @default(now())
+  parentName                String
+  school                    String
+  yearGroup                 String
+  childName                 String
+  consentStatus             Boolean
+  attendanceStatus          String?
+  checkedIn                 Boolean  @default(false)
+  checkedInAt               DateTime?
+  checkedInBy               String?
+  parentEmailEncrypted      String
+  parentPhoneEncrypted      String
+  emergencyContactEncrypted String
+  medicalNotesEncrypted     String
+  /// Admin-only operational notes (plain text, not encrypted).
+  notes                     String?
+  /// JSON of additional consent answers (non-core field ids), encrypted at rest.
+  extrasEncrypted           String?
+
+  @@index([eventId])
+  @@index([school])
+  @@index([yearGroup])
+  @@index([checkedIn])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  adminId    String?
+  action     String
+  targetType String
+  targetId   String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
