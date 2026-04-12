@@ -36,7 +36,7 @@ export default async function EventsPage() {
         <Card>
           <CardHeader className="p-6">
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              There are no published events yet. NHSF (UK) Schools staff can add
+              There are no published events yet. The NHSF (UK) Schools team can add
               events from the admin area.
             </p>
           </CardHeader>
