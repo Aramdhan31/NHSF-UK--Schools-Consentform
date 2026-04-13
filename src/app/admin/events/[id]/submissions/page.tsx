@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Table, TD, TH, THead, TRow } from "@/components/ui/Table";
 import { cn } from "@/lib/cn";
+import { eventConsentFieldsForUse } from "@/lib/form-template";
 import { prisma } from "@/lib/db";
+import { optionalFieldGapLabelsForSubmission } from "@/lib/server/submission-field-completion";
 import { decryptSubmissionSensitiveColumns } from "@/lib/server/submission-sensitive";
 import {
   toggleSubmissionCheckIn,
@@ -55,6 +57,7 @@ export default async function AdminSubmissionsPage({
     consentFilter !== null;
 
   let eventTitle: string | null = null;
+  let formFields = eventConsentFieldsForUse(null, false);
   let rows: Awaited<ReturnType<typeof prisma.submission.findMany>> = [];
   let schoolOptions: { school: string }[] = [];
   let yearOptions: { yearGroup: string }[] = [];
@@ -62,12 +65,20 @@ export default async function AdminSubmissionsPage({
   try {
     const event = await prisma.event.findUnique({
       where: { id },
-      select: { title: true },
+      select: {
+        title: true,
+        formFieldsJson: true,
+        includeMediaConsent: true,
+      },
     });
     if (!event) {
       notFound();
     }
     eventTitle = event.title;
+    formFields = eventConsentFieldsForUse(
+      event.formFieldsJson,
+      event.includeMediaConsent,
+    );
 
     const where: Prisma.SubmissionWhereInput = {
       eventId: id,
@@ -317,12 +328,17 @@ export default async function AdminSubmissionsPage({
                   <TH>Year</TH>
                   <TH>Consent</TH>
                   <TH>Status</TH>
+                  <TH className="max-w-[10rem]">Optional info</TH>
                   <TH className="min-w-[11rem] max-w-[13rem]">Notes</TH>
                   <TH className="w-[1%] whitespace-nowrap">Action</TH>
                 </TRow>
               </THead>
               <tbody>
                 {rowsWithSensitive.map(({ row }) => {
+                  const optionalGaps = optionalFieldGapLabelsForSubmission(
+                    row,
+                    formFields,
+                  );
                   const toggle = toggleSubmissionCheckIn.bind(
                     null,
                     id,
@@ -386,6 +402,19 @@ export default async function AdminSubmissionsPage({
                           <span className="text-zinc-500 dark:text-zinc-400">
                             Expected
                           </span>
+                        )}
+                      </TD>
+                      <TD className="max-w-[10rem] align-top text-xs leading-snug">
+                        {optionalGaps.length === 0 ? (
+                          <span className="text-zinc-500 dark:text-zinc-400">
+                            All optional fields filled
+                          </span>
+                        ) : (
+                          <ul className="list-inside list-disc text-amber-800 dark:text-amber-200">
+                            {optionalGaps.map((label, gi) => (
+                              <li key={gi}>{label}</li>
+                            ))}
+                          </ul>
                         )}
                       </TD>
                       <TD className="max-w-[13rem] align-top">

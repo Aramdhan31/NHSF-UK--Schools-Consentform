@@ -11,7 +11,10 @@ import {
 } from "@/app/admin/events/actions";
 import { EventConsentTemplateSection } from "@/components/admin/EventConsentTemplateSection";
 import { prisma } from "@/lib/db";
-import { parseFormFieldsJson } from "@/lib/form-template";
+import {
+  parseFormFieldsJson,
+  stripMediaConsentFromFields,
+} from "@/lib/form-template";
 
 function toDatetimeLocalValue(d: Date | null | undefined): string {
   if (!d) return "";
@@ -54,7 +57,9 @@ export default async function AdminEditEventPage({
 
   const boundUpdate = updateEventAction.bind(null, event.id);
   const boundDelete = deleteEventAction.bind(null, event.id);
-  const initialFormFields = parseFormFieldsJson(event.formFieldsJson);
+  const initialFormFields = stripMediaConsentFromFields(
+    parseFormFieldsJson(event.formFieldsJson),
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -188,6 +193,26 @@ export default async function AdminEditEventPage({
                 </select>
               </label>
             </div>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/40 sm:p-5">
+              <input
+                type="checkbox"
+                name="includeMediaConsent"
+                value="on"
+                defaultChecked={event.includeMediaConsent}
+                className="mt-1 h-4 w-4 shrink-0 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+              />
+              <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                  Include photos &amp; video consent
+                </span>
+                <span className="mt-1 block text-xs text-zinc-600 dark:text-zinc-400">
+                  Adds an optional checkbox on the public form (just before the
+                  main declaration) for parents to agree to their child being in
+                  photos or recordings. Leave off if this event does not need it.
+                </span>
+              </span>
+            </label>
 
             <EventConsentTemplateSection initialFields={initialFormFields} />
 

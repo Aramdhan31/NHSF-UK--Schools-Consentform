@@ -8,6 +8,7 @@ import { isAdminAuthenticated } from "@/lib/auth";
 import {
   defaultConsentFormFields,
   safeParseFormFieldsJsonString,
+  stripMediaConsentFromFields,
   validateConsentFormFieldsForPersistence,
   type FormFieldDef,
 } from "@/lib/form-template";
@@ -54,7 +55,15 @@ function parseOptionalDateTime(raw: FormDataEntryValue | null): Date | null {
 function readFormFieldsFromFormData(formData: FormData): FormFieldDef[] {
   const raw = formData.get("formFieldsJson");
   if (typeof raw !== "string") return defaultConsentFormFields();
-  return safeParseFormFieldsJsonString(raw) ?? defaultConsentFormFields();
+  return (
+    stripMediaConsentFromFields(
+      safeParseFormFieldsJsonString(raw) ?? defaultConsentFormFields(),
+    )
+  );
+}
+
+function readIncludeMediaConsent(formData: FormData): boolean {
+  return formData.get("includeMediaConsent") === "on";
 }
 
 function persistableFormFieldsJson(
@@ -86,6 +95,8 @@ export async function createEventAction(formData: FormData) {
     redirect("/admin/events/new?error=bad-form-template");
   }
 
+  const includeMediaConsent = readIncludeMediaConsent(formData);
+
   try {
     await prisma.event.create({
       data: {
@@ -96,6 +107,7 @@ export async function createEventAction(formData: FormData) {
         opensAt,
         closesAt,
         status,
+        includeMediaConsent,
         formFieldsJson: persistableFormFieldsJson(formFields),
       },
     });
@@ -128,6 +140,7 @@ export async function duplicateEventAction(sourceEventId: string) {
       opensAt: true,
       closesAt: true,
       formFieldsJson: true,
+      includeMediaConsent: true,
     },
   });
 
@@ -149,6 +162,7 @@ export async function duplicateEventAction(sourceEventId: string) {
         opensAt: source.opensAt,
         closesAt: source.closesAt,
         status: "draft",
+        includeMediaConsent: source.includeMediaConsent,
         formFieldsJson:
           source.formFieldsJson === null || source.formFieldsJson === undefined
             ? undefined
@@ -191,6 +205,8 @@ export async function updateEventAction(eventId: string, formData: FormData) {
     redirect(`/admin/events/${eventId}?error=bad-form-template`);
   }
 
+  const includeMediaConsent = readIncludeMediaConsent(formData);
+
   try {
     await prisma.event.update({
       where: { id: eventId },
@@ -202,6 +218,7 @@ export async function updateEventAction(eventId: string, formData: FormData) {
         opensAt,
         closesAt,
         status,
+        includeMediaConsent,
         formFieldsJson: persistableFormFieldsJson(formFields),
       },
     });

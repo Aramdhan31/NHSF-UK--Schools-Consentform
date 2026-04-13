@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { FormFieldDef } from "@/lib/form-template";
 import { formFieldTypes } from "@/lib/form-template";
+import { defaultParticipantSchoolOptions } from "@/lib/participant-schools";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
@@ -135,11 +136,23 @@ export function FormTemplateEditor({
                 <select
                   className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
                   value={field.type}
-                  onChange={(e) =>
-                    patch(index, {
-                      type: e.target.value as FormFieldDef["type"],
-                    })
-                  }
+                  onChange={(e) => {
+                    const t = e.target.value as FormFieldDef["type"];
+                    if (t === "select") {
+                      const opts =
+                        field.id === "school"
+                          ? defaultParticipantSchoolOptions()
+                          : field.options?.length
+                            ? field.options
+                            : [
+                                { value: "option_a", label: "Option A" },
+                                { value: "option_b", label: "Option B" },
+                              ];
+                      patch(index, { type: "select", options: opts });
+                    } else {
+                      patch(index, { type: t, options: undefined });
+                    }
+                  }}
                 >
                   {formFieldTypes.map((t) => (
                     <option key={t} value={t}>
@@ -202,6 +215,60 @@ export function FormTemplateEditor({
                   }
                 />
               </label>
+              {field.type === "select" ? (
+                <div className="space-y-2 sm:col-span-2">
+                  <label className="block space-y-1">
+                    <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                      Options (one per line:{" "}
+                      <code className="text-[11px]">value|label</code>)
+                    </span>
+                    <textarea
+                      rows={6}
+                      className="w-full rounded-xl border border-zinc-200 bg-white p-3 font-mono text-xs text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                      value={
+                        field.options
+                          ?.map((o) => `${o.value}|${o.label}`)
+                          .join("\n") ?? ""
+                      }
+                      onChange={(e) => {
+                        const options = e.target.value
+                          .split("\n")
+                          .map((line) => {
+                            const pipe = line.indexOf("|");
+                            if (pipe === -1) {
+                              const v = line.trim();
+                              return v ? { value: v, label: v } : null;
+                            }
+                            const value = line.slice(0, pipe).trim();
+                            const label =
+                              line.slice(pipe + 1).trim() || value;
+                            return value ? { value, label } : null;
+                          })
+                          .filter(
+                            (o): o is { value: string; label: string } =>
+                              o !== null,
+                          );
+                        patch(index, { options });
+                      }}
+                    />
+                  </label>
+                  {field.id === "school" ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-zinc-700 dark:text-zinc-300"
+                      onClick={() =>
+                        patch(index, {
+                          options: defaultParticipantSchoolOptions(),
+                        })
+                      }
+                    >
+                      Reset to standard school list
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </li>
         ))}

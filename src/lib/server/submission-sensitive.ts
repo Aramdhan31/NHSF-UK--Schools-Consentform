@@ -58,3 +58,25 @@ export function decryptSubmissionSensitiveColumns(row: {
       tryDecryptSubmissionCiphertext(row.medicalNotesEncrypted) ?? fallback,
   };
 }
+
+/**
+ * Decrypt for exports / completion checks: empty string when missing or
+ * undecryptable (avoids treating the UI placeholder "—" as real data).
+ */
+export function decryptSubmissionSensitiveForExport(row: {
+  parentEmailEncrypted: string;
+  parentPhoneEncrypted: string;
+  emergencyContactEncrypted: string;
+  medicalNotesEncrypted: string;
+}): SubmissionPlaintextSensitive {
+  return {
+    parentEmail:
+      tryDecryptSubmissionCiphertext(row.parentEmailEncrypted) ?? "",
+    parentPhone:
+      tryDecryptSubmissionCiphertext(row.parentPhoneEncrypted) ?? "",
+    emergencyContact:
+      tryDecryptSubmissionCiphertext(row.emergencyContactEncrypted) ?? "",
+    medicalNotes:
+      tryDecryptSubmissionCiphertext(row.medicalNotesEncrypted) ?? "",
+  };
+}

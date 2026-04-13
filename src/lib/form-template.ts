@@ -1,18 +1,53 @@
 import { z } from "zod";
+import {
+  defaultParticipantSchoolOptions,
+  PARTICIPANT_SCHOOL_OTHER_VALUE,
+} from "@/lib/participant-schools";
 
-export const formFieldTypes = ["text", "email", "tel", "textarea", "checkbox"] as const;
+export const formFieldTypes = [
+  "text",
+  "email",
+  "tel",
+  "textarea",
+  "checkbox",
+  "select",
+] as const;
 
-export const formFieldDefSchema = z.object({
-  id: z.string().min(1),
-  group: z.string().optional(),
-  groupTitle: z.string().optional(),
+export const formFieldOptionSchema = z.object({
+  value: z.string().min(1),
   label: z.string().min(1),
-  type: z.enum(formFieldTypes),
-  required: z.boolean(),
-  placeholder: z.string().optional(),
-  autoComplete: z.string().optional(),
-  rows: z.number().int().positive().max(24).optional(),
 });
+
+export const formFieldDefSchema = z
+  .object({
+    id: z.string().min(1),
+    group: z.string().optional(),
+    groupTitle: z.string().optional(),
+    label: z.string().min(1),
+    type: z.enum(formFieldTypes),
+    required: z.boolean(),
+    placeholder: z.string().optional(),
+    autoComplete: z.string().optional(),
+    rows: z.number().int().positive().max(24).optional(),
+    options: z.array(formFieldOptionSchema).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === "select") {
+      if (!data.options?.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Select fields need at least one option",
+          path: ["options"],
+        });
+      }
+    } else if (data.options != null && data.options.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Only select fields may have options",
+        path: ["options"],
+      });
+    }
+  });
 
 export type FormFieldDef = z.infer<typeof formFieldDefSchema>;
 
@@ -58,8 +93,17 @@ export function defaultConsentFormFields(): FormFieldDef[] {
       id: "school",
       group: "participant",
       label: "School",
-      type: "text",
+      type: "select",
       required: true,
+      options: defaultParticipantSchoolOptions(),
+    },
+    {
+      id: "schoolOther",
+      group: "participant",
+      label: "School name (only if you chose Other above)",
+      type: "text",
+      required: false,
+      placeholder: "Type the full name of your school",
     },
     {
       id: "yearGroup",
@@ -96,6 +140,52 @@ export function defaultConsentFormFields(): FormFieldDef[] {
   ];
 }
 
+export const MEDIA_CONSENT_FIELD_ID = "mediaConsent" as const;
+
+/** Optional checkbox — injected when `Event.includeMediaConsent` is true (before declaration). */
+export function mediaConsentFieldDef(): FormFieldDef {
+  return {
+    id: MEDIA_CONSENT_FIELD_ID,
+    group: "media",
+    groupTitle: "Photos and video",
+    label:
+      "I consent to my child being included in photographs and/or video taken at this NHSF (UK) Schools event for school communications, NHSF (UK) or school promotional use, or similar purposes explained by the school or organisers. (Optional — you can still take part if you do not tick this.)",
+    type: "checkbox",
+    required: false,
+  };
+}
+
+/** Remove media consent from stored JSON so it is only controlled by the event flag. */
+export function stripMediaConsentFromFields(
+  fields: FormFieldDef[],
+): FormFieldDef[] {
+  return fields.filter((f) => f.id !== MEDIA_CONSENT_FIELD_ID);
+}
+
+export function mergeMediaConsentForEvent(
+  fields: FormFieldDef[],
+  include: boolean,
+): FormFieldDef[] {
+  const base = stripMediaConsentFromFields(fields);
+  if (!include) {
+    return base;
+  }
+  const declIdx = base.findIndex((f) => f.id === "declaration");
+  const insertAt = declIdx >= 0 ? declIdx : base.length;
+  const next = [...base];
+  next.splice(insertAt, 0, mediaConsentFieldDef());
+  return next;
+}
+
+/** Form fields as parents see them (published form, submit validation, exports). */
+export function eventConsentFieldsForUse(
+  formFieldsJson: unknown | null,
+  includeMediaConsent: boolean,
+): FormFieldDef[] {
+  const parsed = parseFormFieldsJson(formFieldsJson);
+  return mergeMediaConsentForEvent(parsed, includeMediaConsent);
+}
+
 export function parseFormFieldsJson(raw: unknown): FormFieldDef[] {
   const parsed = formFieldsArraySchema.safeParse(raw);
   if (!parsed.success) {
@@ -123,17 +213,79 @@ const CORE_FIELD_SPECS: Record<
   parentEmail: { type: "email", required: true },
   parentPhone: { type: "tel", required: false },
   childName: { type: "text", required: true },
-  school: { type: "text", required: true },
   yearGroup: { type: "text", required: true },
   emergencyPhone: { type: "tel", required: true },
   medical: { type: "textarea", required: false },
   declaration: { type: "checkbox", required: true },
 };
 
+function validateSchoolCorePair(
+  byId: Map<string, FormFieldDef>,
+): { ok: true } | { ok: false; message: string } {
+  const school = byId.get("school");
+  if (!school) {
+    return { ok: false, message: `Missing required field id "school".` };
+  }
+  if (school.type === "text") {
+    if (school.required !== true) {
+      return {
+        ok: false,
+        message: `Field "school" must have required=true for legacy text type.`,
+      };
+    }
+    if (byId.has("schoolOther")) {
+      return {
+        ok: false,
+        message:
+          'Remove field id "schoolOther" when "school" is a plain text field, or switch school to type "select".',
+      };
+    }
+    return { ok: true };
+  }
+  if (school.type === "select") {
+    if (school.required !== true) {
+      return {
+        ok: false,
+        message: `Field "school" (select) must have required=true.`,
+      };
+    }
+    if (
+      !school.options?.some((o) => o.value === PARTICIPANT_SCHOOL_OTHER_VALUE)
+    ) {
+      return {
+        ok: false,
+        message: `Field "school" (select) must include an "Other" option with value "${PARTICIPANT_SCHOOL_OTHER_VALUE}".`,
+      };
+    }
+    const other = byId.get("schoolOther");
+    if (!other) {
+      return {
+        ok: false,
+        message: `Missing required field id "schoolOther" when "school" is a select (optional text for Other).`,
+      };
+    }
+    if (other.type !== "text" || other.required !== false) {
+      return {
+        ok: false,
+        message: `Field "schoolOther" must be type "text" with required=false.`,
+      };
+    }
+    return { ok: true };
+  }
+  return {
+    ok: false,
+    message: `Field "school" must be type "text" (legacy) or "select" (got "${school.type}").`,
+  };
+}
+
 export function validateConsentFormFieldsForPersistence(
   fields: FormFieldDef[],
 ): { ok: true } | { ok: false; message: string } {
   const byId = new Map(fields.map((f) => [f.id, f]));
+  const schoolCheck = validateSchoolCorePair(byId);
+  if (!schoolCheck.ok) {
+    return schoolCheck;
+  }
   for (const [id, spec] of Object.entries(CORE_FIELD_SPECS)) {
     const f = byId.get(id);
     if (!f) {

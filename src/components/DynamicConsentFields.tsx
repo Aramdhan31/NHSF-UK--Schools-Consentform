@@ -39,6 +39,37 @@ function FieldInput({ field }: { field: FormFieldDef }) {
     );
   }
 
+  if (field.type === "select") {
+    const opts = field.options ?? [];
+    return (
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          {field.label}
+          {labelSuffix}
+        </span>
+        <select
+          name={field.id}
+          required={required}
+          defaultValue=""
+          className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm transition-[border-color,box-shadow] focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/30 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-500 dark:focus:ring-zinc-500/25"
+        >
+          {required ? (
+            <option value="" disabled>
+              Select…
+            </option>
+          ) : (
+            <option value="">—</option>
+          )}
+          {opts.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
   if (field.type === "textarea") {
     return (
       <label className="block space-y-1.5">
@@ -89,7 +120,9 @@ export function DynamicConsentFields({ fields }: { fields: FormFieldDef[] }) {
               <div
                 key={field.id}
                 className={
-                  field.type === "checkbox" || field.type === "textarea"
+                  field.type === "checkbox" ||
+                  field.type === "textarea" ||
+                  field.type === "select"
                     ? "sm:col-span-2"
                     : ""
                 }

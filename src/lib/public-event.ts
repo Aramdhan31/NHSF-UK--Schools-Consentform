@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import {
   defaultConsentFormFields,
-  parseFormFieldsJson,
+  eventConsentFieldsForUse,
   type FormFieldDef,
 } from "@/lib/form-template";
 import { getSchoolEventOrFallback, SCHOOL_EVENTS } from "@/lib/school-events";
@@ -62,6 +62,7 @@ function mapDbEvent(row: {
   closesAt: Date | null;
   status: string;
   formFieldsJson: unknown | null;
+  includeMediaConsent: boolean;
 }): PublicEventView {
   return {
     eventId: row.id,
@@ -72,7 +73,10 @@ function mapDbEvent(row: {
     location: "TBC",
     closesLabel: formatDateTime(row.closesAt),
     statusLabel: row.status,
-    formFields: parseFormFieldsJson(row.formFieldsJson),
+    formFields: eventConsentFieldsForUse(
+      row.formFieldsJson,
+      row.includeMediaConsent,
+    ),
     source: "database",
   };
 }
@@ -92,6 +96,7 @@ export async function getPublishedEventForSlug(
         closesAt: true,
         status: true,
         formFieldsJson: true,
+        includeMediaConsent: true,
       },
     });
     if (row) {
@@ -129,6 +134,7 @@ export async function listPublishedEvents(): Promise<PublicEventView[]> {
         closesAt: true,
         status: true,
         formFieldsJson: true,
+        includeMediaConsent: true,
       },
     });
     return rows.map((row) => mapDbEvent(row));

@@ -26,6 +26,8 @@ model Event {
   status         String
   /// JSON array of consent field definitions (`FormFieldDef[]`). Null = use app default template.
   formFieldsJson Json?
+  /// When true, parents see an optional photos/video consent checkbox (controlled here, not in formFieldsJson).
+  includeMediaConsent Boolean @default(false)
   createdAt      DateTime     @default(now())
   submissions    Submission[]
 

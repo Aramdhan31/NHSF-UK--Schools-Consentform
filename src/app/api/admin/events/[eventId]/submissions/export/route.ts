@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { eventConsentFieldsForUse } from "@/lib/form-template";
 import {
   buildSubmissionsExportCsv,
   sanitizeCsvFilenameSegment,
@@ -22,7 +23,12 @@ export async function GET(
 
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    select: { id: true, slug: true },
+    select: {
+      id: true,
+      slug: true,
+      formFieldsJson: true,
+      includeMediaConsent: true,
+    },
   });
 
   if (!event) {
@@ -37,7 +43,11 @@ export async function GET(
     orderBy: [{ checkedIn: "asc" }, { submittedAt: "desc" }],
   });
 
-  const csv = buildSubmissionsExportCsv(submissions);
+  const formFields = eventConsentFieldsForUse(
+    event.formFieldsJson,
+    event.includeMediaConsent,
+  );
+  const csv = buildSubmissionsExportCsv(submissions, formFields);
   const slugPart = sanitizeCsvFilenameSegment(event.slug);
   const datePart = new Date().toISOString().slice(0, 10);
   const filename = `submissions-${slugPart}-${datePart}.csv`;

@@ -9,11 +9,12 @@ import { encryptSubmissionSensitiveFields } from "@/lib/server/submission-sensit
 import {
   buildConsentSubmissionSchema,
   consentRawFromFormData,
+  normalizeSchoolFieldsForStorage,
   splitConsentPayload,
 } from "@/lib/consent-submission";
 import {
   defaultConsentFormFields,
-  parseFormFieldsJson,
+  eventConsentFieldsForUse,
 } from "@/lib/form-template";
 
 const PUBLISHED = "published";
@@ -54,7 +55,13 @@ export async function submitConsentForEvent(formData: FormData): Promise<void> {
 
   const event = await prisma.event.findFirst({
     where: { id: eventId, status: PUBLISHED },
-    select: { id: true, slug: true, title: true, formFieldsJson: true },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      formFieldsJson: true,
+      includeMediaConsent: true,
+    },
   });
 
   if (!event) {
@@ -65,7 +72,10 @@ export async function submitConsentForEvent(formData: FormData): Promise<void> {
     );
   }
 
-  const fields = parseFormFieldsJson(event.formFieldsJson);
+  const fields = eventConsentFieldsForUse(
+    event.formFieldsJson,
+    event.includeMediaConsent,
+  );
   const schema = buildConsentSubmissionSchema(fields);
   const raw = consentRawFromFormData(formData, fields);
   const parsed = schema.safeParse(raw);
@@ -78,7 +88,11 @@ export async function submitConsentForEvent(formData: FormData): Promise<void> {
     );
   }
 
-  const split = splitConsentPayload(parsed.data);
+  const split = splitConsentPayload(
+    normalizeSchoolFieldsForStorage(
+      parsed.data as Record<string, unknown>,
+    ),
+  );
 
   const extrasEncrypted =
     Object.keys(split.extras).length > 0

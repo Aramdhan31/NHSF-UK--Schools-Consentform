@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { FormFieldDef } from "@/lib/form-template";
+import { PARTICIPANT_SCHOOL_OTHER_VALUE } from "@/lib/participant-schools";
 
 /** Stored in structured DB columns + encrypted sensitive block. */
 export const CONSENT_CORE_FIELD_IDS = [
@@ -44,6 +45,14 @@ function fieldZod(f: FormFieldDef): z.ZodTypeAny {
   if (f.type === "checkbox") {
     return f.required ? z.literal(true) : z.boolean();
   }
+  if (f.type === "select") {
+    const allowed = new Set((f.options ?? []).map((o) => o.value));
+    const oneOf = z
+      .string()
+      .trim()
+      .refine((v) => allowed.has(v), "Choose an option");
+    return f.required ? oneOf : z.union([z.literal(""), oneOf]);
+  }
   if (f.type === "email") {
     const e = z.string().trim().email().max(320);
     return f.required ? e : z.union([e, z.literal("")]);
@@ -69,7 +78,40 @@ export function buildConsentSubmissionSchema(fields: FormFieldDef[]) {
   for (const f of fields) {
     shape[f.id] = fieldZod(f);
   }
-  return z.object(shape);
+  const base = z.object(shape);
+  const hasSchoolSelect = fields.some(
+    (f) => f.id === "school" && f.type === "select",
+  );
+  if (!hasSchoolSelect) {
+    return base;
+  }
+  return base.superRefine((data, ctx) => {
+    if (data.school !== PARTICIPANT_SCHOOL_OTHER_VALUE) {
+      return;
+    }
+    const o = String(
+      (data as Record<string, unknown>).schoolOther ?? "",
+    ).trim();
+    if (o.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enter your school name when you choose Other",
+        path: ["schoolOther"],
+      });
+    }
+  });
+}
+
+/** Merge "Other" free text into `school` and drop `schoolOther` before split / DB. */
+export function normalizeSchoolFieldsForStorage(
+  data: Record<string, unknown>,
+): Record<string, unknown> {
+  const schoolRaw = String(data.school ?? "").trim();
+  const other = String(data.schoolOther ?? "").trim();
+  const school =
+    schoolRaw === PARTICIPANT_SCHOOL_OTHER_VALUE ? other : schoolRaw;
+  const { schoolOther: _drop, ...rest } = data;
+  return { ...rest, school };
 }
 
 export type ParsedConsentPayload = {

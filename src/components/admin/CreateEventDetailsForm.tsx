@@ -120,6 +120,24 @@ export function CreateEventDetailsForm({
             </label>
           </div>
 
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/40 sm:p-5">
+            <input
+              type="checkbox"
+              name="includeMediaConsent"
+              value="on"
+              className="mt-1 h-4 w-4 shrink-0 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+            <span className="text-sm text-zinc-700 dark:text-zinc-300">
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                Include photos &amp; video consent
+              </span>
+              <span className="mt-1 block text-xs text-zinc-600 dark:text-zinc-400">
+                Optional checkbox on the public form for parents to agree to
+                photos or recordings. Untick if this event does not need it.
+              </span>
+            </span>
+          </label>
+
           <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/30 sm:p-5">
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
               Consent form fields
