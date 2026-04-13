@@ -3,7 +3,11 @@
 import { useCallback, useMemo, useState } from "react";
 import type { FormFieldDef } from "@/lib/form-template";
 import { formFieldTypes } from "@/lib/form-template";
-import { defaultParticipantSchoolOptions } from "@/lib/participant-schools";
+import {
+  adminLinesToSchoolOptions,
+  defaultParticipantSchoolOptions,
+  schoolOptionsToAdminLines,
+} from "@/lib/participant-schools";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
@@ -217,56 +221,88 @@ export function FormTemplateEditor({
               </label>
               {field.type === "select" ? (
                 <div className="space-y-2 sm:col-span-2">
-                  <label className="block space-y-1">
-                    <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                      Options (one per line:{" "}
-                      <code className="text-[11px]">value|label</code>)
-                    </span>
-                    <textarea
-                      rows={6}
-                      className="w-full rounded-xl border border-zinc-200 bg-white p-3 font-mono text-xs text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
-                      value={
-                        field.options
-                          ?.map((o) => `${o.value}|${o.label}`)
-                          .join("\n") ?? ""
-                      }
-                      onChange={(e) => {
-                        const options = e.target.value
-                          .split("\n")
-                          .map((line) => {
-                            const pipe = line.indexOf("|");
-                            if (pipe === -1) {
-                              const v = line.trim();
-                              return v ? { value: v, label: v } : null;
-                            }
-                            const value = line.slice(0, pipe).trim();
-                            const label =
-                              line.slice(pipe + 1).trim() || value;
-                            return value ? { value, label } : null;
-                          })
-                          .filter(
-                            (o): o is { value: string; label: string } =>
-                              o !== null,
-                          );
-                        patch(index, { options });
-                      }}
-                    />
-                  </label>
                   {field.id === "school" ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-zinc-700 dark:text-zinc-300"
-                      onClick={() =>
-                        patch(index, {
-                          options: defaultParticipantSchoolOptions(),
-                        })
-                      }
-                    >
-                      Reset to standard school list
-                    </Button>
-                  ) : null}
+                    <>
+                      <label className="block space-y-1">
+                        <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                          School names (one per line)
+                        </span>
+                        <textarea
+                          spellCheck={false}
+                          autoCorrect="off"
+                          rows={10}
+                          className="w-full rounded-xl border border-zinc-200 bg-white p-3 text-sm text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                          value={schoolOptionsToAdminLines(field.options)}
+                          onChange={(e) =>
+                            patch(index, {
+                              options: adminLinesToSchoolOptions(
+                                e.target.value,
+                              ),
+                            })
+                          }
+                        />
+                      </label>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                        Parents always see an{" "}
+                        <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                          Other
+                        </span>{" "}
+                        choice at the end; if they pick it, they type their
+                        school in the next field on the form.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-zinc-700 dark:text-zinc-300"
+                        onClick={() =>
+                          patch(index, {
+                            options: defaultParticipantSchoolOptions(),
+                          })
+                        }
+                      >
+                        Reset to standard school list
+                      </Button>
+                    </>
+                  ) : (
+                    <label className="block space-y-1">
+                      <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                        Options (one per line:{" "}
+                        <code className="text-[11px]">value|label</code>)
+                      </span>
+                      <textarea
+                        spellCheck={false}
+                        autoCorrect="off"
+                        rows={6}
+                        className="w-full rounded-xl border border-zinc-200 bg-white p-3 font-mono text-xs text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                        value={
+                          field.options
+                            ?.map((o) => `${o.value}|${o.label}`)
+                            .join("\n") ?? ""
+                        }
+                        onChange={(e) => {
+                          const options = e.target.value
+                            .split("\n")
+                            .map((line) => {
+                              const pipe = line.indexOf("|");
+                              if (pipe === -1) {
+                                const v = line.trim();
+                                return v ? { value: v, label: v } : null;
+                              }
+                              const value = line.slice(0, pipe).trim();
+                              const label =
+                                line.slice(pipe + 1).trim() || value;
+                              return value ? { value, label } : null;
+                            })
+                            .filter(
+                              (o): o is { value: string; label: string } =>
+                                o !== null,
+                            );
+                          patch(index, { options });
+                        }}
+                      />
+                    </label>
+                  )}
                 </div>
               ) : null}
             </div>

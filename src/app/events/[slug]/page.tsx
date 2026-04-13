@@ -56,7 +56,7 @@ export async function generateMetadata({
   }
   const raw =
     event.summary?.trim() ||
-    `Parent and carer consent form for ${event.name}. Complete this form for NHSF (UK) Schools.`;
+    `Parents and carers consent form for ${event.name}. Complete this form for NHSF (UK) Schools.`;
   const description = clampMetaDescription(raw);
   const path = `/events/${slug}`;
   const title = `${event.name} — consent form`;

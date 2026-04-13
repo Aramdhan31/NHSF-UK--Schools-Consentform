@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 };
 
 const defaultDescription =
-  "Parent and carer consent forms for NHSF (UK) Schools events. Complete the right form for each event your child will attend — secure, clear, and organised for schools.";
+  "Parents and carers consent forms for NHSF (UK) Schools events. Complete the right form for each event your child will attend — secure, clear, and organised for schools.";
 
 export const metadata: Metadata = {
   metadataBase: getMetadataBaseUrl(),

@@ -46,7 +46,7 @@ export default async function Home() {
         name: "NHSF (UK) Schools",
         url: siteUrl,
         description:
-          "Parent and carer consent forms for NHSF (UK) Schools events — secure registration for schools.",
+          "Parents and carers consent forms for NHSF (UK) Schools events — secure registration for schools.",
         publisher: { "@id": `${siteUrl}/#organization` },
         inLanguage: "en-GB",
       },
