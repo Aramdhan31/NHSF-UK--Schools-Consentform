@@ -132,8 +132,10 @@ export function CreateEventDetailsForm({
                 Include photos &amp; video consent
               </span>
               <span className="mt-1 block text-xs text-zinc-600 dark:text-zinc-400">
-                Optional checkbox on the public form for parents to agree to
-                photos or recordings. Untick if this event does not need it.
+                Optional checkbox so parents can give formal permission for
+                NHSF (UK) Schools to use their child&apos;s photo, film, or
+                quotations on promotional material and publications. Untick if
+                this event does not need it.
               </span>
             </span>
           </label>

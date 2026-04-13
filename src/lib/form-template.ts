@@ -149,7 +149,7 @@ export function mediaConsentFieldDef(): FormFieldDef {
     group: "media",
     groupTitle: "Photos and video",
     label:
-      "I consent to my child being included in photographs and/or video taken at this NHSF (UK) Schools event for school communications, NHSF (UK) or school promotional use, or similar purposes explained by the school or organisers. (Optional — you can still take part if you do not tick this.)",
+      "I give permission for NHSF (UK) Schools to use my child's photograph and other media such as film and quotations, on NHSF (UK) Schools promotional material and publications. (Optional — you can still take part if you do not tick this.)",
     type: "checkbox",
     required: false,
   };

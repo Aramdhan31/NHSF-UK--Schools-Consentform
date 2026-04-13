@@ -207,9 +207,11 @@ export default async function AdminEditEventPage({
                   Include photos &amp; video consent
                 </span>
                 <span className="mt-1 block text-xs text-zinc-600 dark:text-zinc-400">
-                  Adds an optional checkbox on the public form (just before the
-                  main declaration) for parents to agree to their child being in
-                  photos or recordings. Leave off if this event does not need it.
+                  Adds an optional checkbox (just before the main declaration) so
+                  parents can give formal permission for NHSF (UK) Schools to use
+                  their child&apos;s photo, film, or quotations on promotional
+                  material and publications. Leave off if this event does not need
+                  it.
                 </span>
               </span>
             </label>
