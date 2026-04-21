@@ -1,4 +1,8 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import type { FormFieldDef } from "@/lib/form-template";
+import { PARTICIPANT_SCHOOL_OTHER_VALUE } from "@/lib/participant-schools";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 
@@ -18,7 +22,16 @@ function groupFormFields(fields: FormFieldDef[]) {
   }));
 }
 
-function FieldInput({ field }: { field: FormFieldDef }) {
+function FieldInput({
+  field,
+  selectValue,
+  onSelectChange,
+}: {
+  field: FormFieldDef;
+  /** When set, the select is controlled (used for school → show/hide Other). */
+  selectValue?: string;
+  onSelectChange?: (value: string) => void;
+}) {
   const required = field.required;
   const labelSuffix = required ? " *" : "";
 
@@ -41,6 +54,7 @@ function FieldInput({ field }: { field: FormFieldDef }) {
 
   if (field.type === "select") {
     const opts = field.options ?? [];
+    const controlled = selectValue !== undefined && onSelectChange !== undefined;
     return (
       <label className="block space-y-1.5">
         <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -50,7 +64,12 @@ function FieldInput({ field }: { field: FormFieldDef }) {
         <select
           name={field.id}
           required={required}
-          defaultValue=""
+          {...(controlled
+            ? {
+                value: selectValue,
+                onChange: (e) => onSelectChange!(e.target.value),
+              }
+            : { defaultValue: "" })}
           className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm transition-[border-color,box-shadow] focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/30 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-500 dark:focus:ring-zinc-500/25"
         >
           {required ? (
@@ -106,33 +125,58 @@ function FieldInput({ field }: { field: FormFieldDef }) {
 }
 
 export function DynamicConsentFields({ fields }: { fields: FormFieldDef[] }) {
+  const hasSchoolSelect = useMemo(
+    () => fields.some((f) => f.id === "school" && f.type === "select"),
+    [fields],
+  );
+  const [schoolChoice, setSchoolChoice] = useState("");
   const groups = groupFormFields(fields);
 
   return (
     <>
-      {groups.map((g) => (
-        <fieldset key={g.key} className="space-y-4">
-          <legend className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            {g.title}
-          </legend>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {g.fields.map((field) => (
-              <div
-                key={field.id}
-                className={
-                  field.type === "checkbox" ||
-                  field.type === "textarea" ||
-                  field.type === "select"
-                    ? "sm:col-span-2"
-                    : ""
-                }
-              >
-                <FieldInput field={field} />
-              </div>
-            ))}
-          </div>
-        </fieldset>
-      ))}
+      {groups.map((g) => {
+        const visibleFields = g.fields.filter((field) => {
+          if (
+            field.id === "schoolOther" &&
+            hasSchoolSelect &&
+            schoolChoice !== PARTICIPANT_SCHOOL_OTHER_VALUE
+          ) {
+            return false;
+          }
+          return true;
+        });
+        return (
+          <fieldset key={g.key} className="space-y-4">
+            <legend className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              {g.title}
+            </legend>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {visibleFields.map((field) => (
+                <div
+                  key={field.id}
+                  className={
+                    field.type === "checkbox" ||
+                    field.type === "textarea" ||
+                    field.type === "select"
+                      ? "sm:col-span-2"
+                      : ""
+                  }
+                >
+                  <FieldInput
+                    field={field}
+                    {...(field.id === "school" && field.type === "select"
+                      ? {
+                          selectValue: schoolChoice,
+                          onSelectChange: setSchoolChoice,
+                        }
+                      : {})}
+                  />
+                </div>
+              ))}
+            </div>
+          </fieldset>
+        );
+      })}
     </>
   );
 }
